@@ -49,13 +49,7 @@ pipeline {
                 }
             }
         }
-
-        stage('Package') {
-            steps {
-                sh 'mvn package -Dmaven.test.skip=true'
-            }
-        }
-
+        
         stage('Publish to Artifactory') {
             steps {
                 script {
