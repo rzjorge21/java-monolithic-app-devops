@@ -9,7 +9,7 @@ pipeline {
     environment {
         SONAR_HOST_URL = 'http://localhost:9000'
         SONAR_LOGIN = withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-          sh 'mvn sonar:sonar -Dsonar.projectKey=demo -Dsonar.host.url=http://localhost:9000 -Dsonar.login=$SONAR_TOKEN'
+          sh 'mvn sonar:sonar -Dsonar.projectKey=monolito -Dsonar.host.url=http://localhost:9000 -Dsonar.login=$SONAR_TOKEN'
         }
     }
 
