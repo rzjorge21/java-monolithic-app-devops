@@ -55,9 +55,11 @@ pipeline {
 
         stage('Upload to Artifactory') {
             steps {
-                sh '''
-                curl -uadmin:password -T target/*.jar "http://localhost:8081/artifactory/libs-release-local/monolito.jar"
-                '''
+                withCredentials([usernamePassword(credentialsId: 'ARTIFACTORY_CREDENTIALS', usernameVariable: 'ART_USER', passwordVariable: 'ART_PASS')]) {
+                  sh '''
+                  curl -u$ART_USER:$ART_PASS -T target/*.jar "http://localhost:8081/artifactory/libs-release-local/monolito.jar"
+                  '''
+              }
             }
         }
     }
