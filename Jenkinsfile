@@ -8,6 +8,9 @@ pipeline {
 
     environment {
         SONAR_HOST_URL = 'http://localhost:9000'
+        ARTIFACTORY_URL = 'http://localhost:8081/artifactory' // Ajusta según tu URL de Artifactory
+        ARTIFACTORY_REPO = 'monolito' // Ajusta según tu repositorio
+        ARTIFACTORY_CREDS = 'ARTIFACTORY_CREDENTIALS' // ID de tus credenciales en Jenkins
     }
 
     stages {
@@ -53,16 +56,33 @@ pipeline {
             }
         }
 
-        stage('Upload to Artifactory') {
-            options {
-                timeout(time: 2, unit: 'MINUTES')
-            }
+        stage('Publish to Artifactory') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'ARTIFACTORY_CREDENTIALS', usernameVariable: 'ART_USER', passwordVariable: 'ART_PASS')]) {
-                  sh '''
-                  curl -u$ART_USER:$ART_PASS -T target/*.jar "http://localhost:8081/artifactory/libs-release-local/monolito.jar"
-                  '''
-              }
+                script {
+                    // Obtener información del POM para construir la ruta en Artifactory
+                    def pom = readMavenPom file: 'pom.xml'
+                    def artifactPath = "${pom.groupId.replace('.', '/')}/${pom.artifactId}/${pom.version}"
+                    def artifactName = "${pom.artifactId}-${pom.version}.jar"
+                    
+                    // Configurar Artifactory
+                    def server = Artifactory.server 'artifactory' // Nombre de tu configuración Artifactory en Jenkins
+                    
+                    def uploadSpec = """{
+                        "files": [
+                            {
+                                "pattern": "target/${artifactName}",
+                                "target": "${ARTIFACTORY_REPO}/${artifactPath}/",
+                                "props": "build.number=${env.BUILD_NUMBER};build.name=${env.JOB_NAME}"
+                            }
+                        ]
+                    }"""
+                    
+                    // Subir el artefacto
+                    def buildInfo = server.upload spec: uploadSpec
+                    server.publishBuildInfo buildInfo
+                    
+                    echo "Artifact ${artifactName} published to Artifactory at ${ARTIFACTORY_URL}/${ARTIFACTORY_REPO}/${artifactPath}"
+                }
             }
         }
     }
